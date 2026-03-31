@@ -1,11 +1,10 @@
 import streamlit as st
 from PIL import Image
 import os
-from datetime import datetime
 import wikipedia
 import sympy as sp
+from datetime import datetime
 
-# Force English only
 wikipedia.set_lang("en")
 
 # ====================== PAGE CONFIG ======================
@@ -23,19 +22,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== PREMIUM CSS ======================
+# Premium Dark Theme
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
-        background: #020617;
+        background: #020617 !important;
         background-image:
             radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
             radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.18) 0%, transparent 50%);
     }
     .stChatMessage {
         border-radius: 20px !important;
-        backdrop-filter: blur(20px);
         box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        padding: 16px 20px;
     }
     .main-title {
         font-size: 3.8rem;
@@ -48,7 +47,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ====================== SAFE LOGO ======================
+# ====================== LOAD LOGO ======================
 def load_logo():
     if os.path.exists(logo_path):
         try:
@@ -61,104 +60,103 @@ logo_img = load_logo()
 
 # ====================== SESSION STATE ======================
 if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm MayBot. How can I help you today? 😊"}]
 
-# ====================== IMPROVED MATH + ANSWER FUNCTION ======================
+# ====================== SMART & POLITE RESPONSE FUNCTION ======================
 def get_vast_answer(user_query):
     q = user_query.strip()
     
-    # Identity
     if any(x in q.lower() for x in ["who made you", "creator", "founder", "mayon", "mayon oberoi"]):
-        return "I am **MayBot**, an intelligent assistant created by **Mayon Oberoi** from Nagpur, India. 🇮🇳"
+        return "I'm MayBot, proudly created by Mayon Oberoi from Nagpur, India. It's a pleasure to chat with you! 🇮🇳 How may I help you today?"
 
-    # === BETTER MATH SOLVER ===
+    # Clean Math Solver
     if any(c.isdigit() for c in q) and any(op in q for op in '+-*/^()=xX'):
         try:
-            # Strong cleaning for math expressions
             expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
             if '=' in expr:
                 left, right = expr.split('=', 1)
                 result = sp.sympify(f"{left} - ({right})").evalf(10)
-                return f"🔢 **Math Solution:**\n`{result}`"
             else:
                 result = sp.sympify(expr).evalf(10)
-                return f"🔢 **Math Result:**\n`{result}`"
+            
+            # Clean output
+            if result.is_integer:
+                clean_result = int(result)
+            else:
+                clean_result = str(result).rstrip('0').rstrip('.') if '.' in str(result) else str(result)
+                
+            return f"🔢 **Solution:** {clean_result}\n\nWould you like me to explain the steps?"
         except:
             pass
 
-    # Wikipedia (Reliable & Clean)
+    # Wikipedia
     try:
         titles = wikipedia.search(q, results=3)
         if titles:
             summary = wikipedia.summary(titles[0], sentences=6, auto_suggest=False)
-            return f"📖 **Wikipedia Summary:**\n\n{summary.strip()}"
+            return f"📖 Here's what I found:\n\n{summary.strip()}\n\nIs there anything else you'd like to know?"
     except:
         pass
 
-    # Final fallback
-    return "I couldn't find a precise answer in my knowledge base. Please rephrase your question clearly in English."
+    # Gentle Fallback
+    return "Thank you for your question! I couldn't find a clear answer right now. Could you please rephrase it? I'm here and happy to help 😊"
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("🛠️ Controls")
-    
     if st.button("🆕 New Chat", use_container_width=True):
-        if st.session_state.messages:
-            title = st.session_state.messages[0]["content"][:40] + "..." if len(st.session_state.messages[0]["content"]) > 40 else st.session_state.messages[0]["content"]
-            st.session_state.chat_history.append({"title": title, "messages": st.session_state.messages.copy()})
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! How can I help you today? 😊"}]
         st.rerun()
-
+    
     if st.button("🗑️ Clear Chat", use_container_width=True):
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! How can I help you today? 😊"}]
         st.rerun()
-
+    
     st.divider()
-    st.subheader("Recent Chats")
-    for i, chat in enumerate(reversed(st.session_state.chat_history[-8:])):
-        if st.button(chat["title"], key=f"hist_{i}", use_container_width=True):
-            st.session_state.messages = chat["messages"].copy()
-            st.rerun()
+    st.caption("Powered by Mayon Oberoi • Nagpur, India")
 
-    st.divider()
-    st.caption("English Only • By Mayon Oberoi • Nagpur, India")
-
-# ====================== MAIN UI ======================
+# ====================== MAIN HEADER ======================
 if logo_img:
     st.image(logo_img, width=130)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
-st.caption("Accurate • Fast • English Only")
+st.caption("Powered by Mayon Oberoi")
 
-# Quick Prompts
-st.markdown("**Try these questions:**")
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    if st.button("Solve 2x² + 5x - 3 = 0", use_container_width=True):
-        st.session_state.messages.append({"role": "user", "content": "Solve 2x² + 5x - 3 = 0"})
-        st.rerun()
-with c2:
-    if st.button("Latest AI news 2026", use_container_width=True):
-        st.session_state.messages.append({"role": "user", "content": "Latest AI news 2026"})
-        st.rerun()
-with c3:
-    if st.button("Tell me about Nagpur", use_container_width=True):
-        st.session_state.messages.append({"role": "user", "content": "Tell me about Nagpur India"})
-        st.rerun()
-with c4:
-    if st.button("Who is Mayon Oberoi?", use_container_width=True):
-        st.session_state.messages.append({"role": "user", "content": "Who is Mayon Oberoi?"})
-        st.rerun()
+# ====================== VOICE INPUT ======================
+st.markdown("**🎤 Voice Input**")
+if st.button("🎤 Click to Speak", use_container_width=True):
+    st.session_state.voice_mode = True
 
-# Chat Display
+# JavaScript for Voice Recognition
+if st.session_state.get("voice_mode", False):
+    voice_html = """
+    <script>
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            window.parent.postMessage({type: "streamlit:setComponentValue", value: transcript}, "*");
+        };
+        
+        recognition.onerror = function() {
+            window.parent.postMessage({type: "streamlit:setComponentValue", value: "Sorry, I couldn't hear you clearly."}, "*");
+        };
+        
+        recognition.start();
+    </script>
+    """
+    st.components.v1.html(voice_html, height=0)
+    st.session_state.voice_mode = False
+
+# ====================== CHAT INTERFACE ======================
 for msg in st.session_state.messages:
     avatar = logo_img if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
 # Chat Input
-if prompt := st.chat_input("Ask me anything in English..."):
+if prompt := st.chat_input("Ask me anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
