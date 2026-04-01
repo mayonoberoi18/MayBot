@@ -17,7 +17,7 @@ except:
 
 st.set_page_config(page_title="MayBot", page_icon=favicon, layout="wide")
 
-# Beautiful Dark Theme
+# Premium Dark Theme
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
@@ -52,76 +52,99 @@ def load_logo():
 
 logo_img = load_logo()
 
-# ====================== FUN CONTENT ======================
+# Fun Content (Used when user asks)
 jokes = [
     "Why don't skeletons fight each other? They don't have the guts! 😂",
     "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
-    "I'm reading a book about anti-gravity. It's impossible to put down! 📖",
+    "I'm reading a book on anti-gravity. It's impossible to put down! 📖",
     "Why do programmers prefer dark mode? Because light attracts bugs! 💻",
-    "Why did the math book look sad? Because it had too many problems! 📚",
-    "Parallel lines have so much in common... It's a shame they'll never meet. 😌"
+    "Parallel lines have so much in common... It's a shame they'll never meet."
 ]
 
 fun_facts = [
-    "Octopuses have three hearts and blue blood!",
+    "Octopuses have three hearts!",
+    "Honey never spoils. Ancient honey was found perfectly edible after 3000 years.",
     "A flock of flamingos is called a flamboyance.",
-    "Honey never spoils. Archaeologists found 3000-year-old honey that was still edible!",
-    "Bananas are technically berries, but strawberries aren't.",
-    "A single bolt of lightning contains enough energy to toast 100,000 slices of bread!"
+    "Bananas are technically berries, but strawberries aren't."
 ]
 
 quotes = [
     "The only way to do great work is to love what you do. – Steve Jobs",
     "Be the change that you wish to see in the world. – Mahatma Gandhi",
-    "In the middle of difficulty lies opportunity. – Albert Einstein",
-    "Believe you can and you're halfway there. – Theodore Roosevelt"
+    "In the middle of difficulty lies opportunity. – Albert Einstein"
 ]
 
 # Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hello there! I'm MayBot 😊 How are you doing today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm MayBot 😊 How can I help you today?"}]
 
-# ====================== MAIN RESPONSE FUNCTION ======================
+# ====================== INTELLIGENT RESPONSE FUNCTION ======================
 def get_vast_answer(user_query):
-    q = user_query.strip().lower()
-    
-    if any(word in q for word in ["who made you", "creator", "founder", "mayon", "mayon oberoi"]):
-        return "I'm MayBot, lovingly created by Mayon Oberoi from Nagpur, India. Thank you for asking! 🇮🇳 How can I make your day better?"
+    q = user_query.strip()
+    q_lower = q.lower()
 
-    # Math
-    if any(c.isdigit() for c in user_query) and any(op in user_query for op in '+-*/^()=xX'):
+    # Identity
+    if any(word in q_lower for word in ["who made you", "creator", "founder", "mayon", "mayon oberoi"]):
+        return "I'm MayBot, created by Mayon Oberoi from Nagpur, India. It's a pleasure to chat with you! 🇮🇳 How may I assist you today?"
+
+    # === Jokes ===
+    if any(word in q_lower for word in ["joke", "jokes", "something funny", "make me laugh"]):
+        return random.choice(jokes) + "\n\nWant another one? 😄"
+
+    # === Fun Fact ===
+    if any(word in q_lower for word in ["fun fact", "interesting fact", "tell me a fact"]):
+        return "🌟 Did you know? " + random.choice(fun_facts) + "\n\nWould you like another fun fact?"
+
+    # === Motivational Quote ===
+    if any(word in q_lower for word in ["quote", "motivation", "inspiration", "motivational quote"]):
+        return "💡 Here's a beautiful quote for you:\n\n" + random.choice(quotes) + "\n\nHope this lifts your spirits!"
+
+    # === Advanced Math ===
+    if any(c.isdigit() for c in q) and any(op in q for op in '+-*/^()=xX'):
         try:
-            expr = user_query.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
+            expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
             if '=' in expr:
                 left, right = expr.split('=', 1)
-                result = sp.sympify(f"{left} - ({right})").evalf(10)
+                result = sp.sympify(f"{left} - ({right})").evalf(12)
             else:
-                result = sp.sympify(expr).evalf(10)
+                result = sp.sympify(expr).evalf(12)
+            
             clean = int(result) if result.is_integer else str(result).rstrip('0').rstrip('.')
-            return f"🔢 The answer is **{clean}**.\n\nWould you like me to explain the steps?"
+            return f"🔢 The answer is **{clean}**.\n\nWould you like me to show the step-by-step solution?"
         except:
             pass
 
-    # Wikipedia
+    # === Provide Link only when asked ===
+    if any(word in q_lower for word in ["link", "source", "website", "url", "reference", "more info"]):
+        try:
+            titles = wikipedia.search(q, results=1)
+            if titles:
+                page = wikipedia.page(titles[0])
+                return f"Here's a reliable link for you:\n\n**{page.title}**\n{page.url}"
+        except:
+            return "I couldn't fetch a link right now. Would you like me to try something else?"
+
+    # Normal Knowledge
     try:
-        titles = wikipedia.search(user_query, results=3)
+        titles = wikipedia.search(q, results=3)
         if titles:
-            summary = wikipedia.summary(titles[0], sentences=5, auto_suggest=False)
-            return f"{summary.strip()}\n\nDid that help? Let me know if you want more details! 😊"
+            summary = wikipedia.summary(titles[0], sentences=6, auto_suggest=False)
+            return f"{summary.strip()}\n\nLet me know if you need more details or a source link! 😊"
     except:
         pass
 
-    return "Thank you for your message! I don't have all the answers, but I'm here with you. Could you tell me more about what you're thinking? 💙"
+    # Polite Fallback
+    return "Thank you for your question! I’m giving it careful thought. Could you please rephrase it or add a little more detail? I’d love to help you better 💙"
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
     st.header("MayBot Controls")
     if st.button("🆕 New Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Hello again! It's great to see you 😊 What’s on your mind?"}]
+        st.session_state.messages = [{"role": "assistant", "content": "Hello again! It's great to see you 😊 What’s on your mind today?"}]
         st.rerun()
     
     if st.button("🗑️ Clear Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Hello there! How can I help you today? 😊"}]
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm MayBot 😊 How can I help you today?"}]
         st.rerun()
     
     st.divider()
@@ -132,27 +155,6 @@ if logo_img:
     st.image(logo_img, width=130)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
 st.caption("Powered by Mayon Oberoi")
-
-# ====================== FUN BUTTONS ======================
-st.markdown("**Have some fun with me!**")
-col1, col2, col3 = st.columns(3)
-with col1:
-    if st.button("🎭 Tell me a Joke", use_container_width=True):
-        joke = random.choice(jokes)
-        st.session_state.messages.append({"role": "assistant", "content": f"{joke}\n\nHaha! Want another one? 😄"})
-        st.rerun()
-
-with col2:
-    if st.button("🌟 Fun Fact", use_container_width=True):
-        fact = random.choice(fun_facts)
-        st.session_state.messages.append({"role": "assistant", "content": f"Did you know? {fact}\n\nIsn't that cool? ✨"})
-        st.rerun()
-
-with col3:
-    if st.button("💡 Motivational Quote", use_container_width=True):
-        quote = random.choice(quotes)
-        st.session_state.messages.append({"role": "assistant", "content": f"Here's a little inspiration:\n\n*{quote}*\n\nHope that brightens your day! 🌟"})
-        st.rerun()
 
 # ====================== VOICE INPUT ======================
 st.markdown("### 🎤 Voice Input")
@@ -174,7 +176,7 @@ if st.session_state.get("voice_mode", False):
     st.components.v1.html(voice_html, height=0)
     st.session_state.voice_mode = False
 
-# ====================== CHAT INTERFACE ======================
+# ====================== CHAT DISPLAY ======================
 for msg in st.session_state.messages:
     avatar = logo_img if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
