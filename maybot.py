@@ -49,65 +49,52 @@ def load_logo():
 logo_img = load_logo()
 
 # Content
-jokes = [
-    "Why don't skeletons fight each other? They don't have the guts! 😂",
-    "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
-    "Why do programmers prefer dark mode? Light attracts bugs! 💻"
-]
+jokes = ["Why don't skeletons fight each other? They don't have the guts! 😂",
+         "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
+         "Why do programmers prefer dark mode? Light attracts bugs! 💻"]
 
-fun_facts = [
-    "Octopuses have three hearts!",
-    "Honey never spoils!",
-    "A group of flamingos is called a flamboyance."
-]
+fun_facts = ["Octopuses have three hearts!", "Honey never spoils!", "A group of flamingos is called a flamboyance."]
 
-quotes = [
-    "The only way to do great work is to love what you do. – Steve Jobs",
-    "Be the change you wish to see in the world. – Mahatma Gandhi"
-]
+quotes = ["The only way to do great work is to love what you do. – Steve Jobs",
+          "Be the change you wish to see in the world. – Mahatma Gandhi"]
 
 # Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{
-        "role": "assistant",
-        "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Hello there! How can I help you today?"
-    }]
+    st.session_state.messages = [{"role": "assistant", "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Hello! How can I help you today?"}]
 
 if "last_topics" not in st.session_state:
     st.session_state.last_topics = []
 
-# ====================== UPGRADED RESPONSE LOGIC ======================
+# ====================== BEST RESPONSE LOGIC ======================
 def get_best_response(user_query):
     q = user_query.strip()
     q_lower = q.lower()
 
-    # Update memory
     st.session_state.last_topics.append(q_lower)
     if len(st.session_state.last_topics) > 10:
         st.session_state.last_topics.pop(0)
 
-    # === 1. GREETINGS (Strong & Fixed) ===
-    greeting_patterns = r'\b(hi|hello|hey|sup|namaste|good morning|good afternoon|good evening|howdy)\b'
-    if re.search(greeting_patterns, q_lower):
-        greeting_replies = [
+    # 1. GREETINGS - Very strong detection
+    if re.search(r'\b(hi|hello|hey|sup|namaste|good morning|good afternoon|good evening|howdy)\b', q_lower):
+        replies = [
             "Hello! 👋 Great to see you. How are you today?",
             "Hey there! 😊 Nice to hear from you. What's on your mind?",
-            "Hi! How's your day going so far?",
-            "Hello! I'm MayBot. Happy to chat with you. How can I help?"
+            "Hi! How's your day going?",
+            "Hello! I'm MayBot. Happy to chat with you 😊"
         ]
-        return random.choice(greeting_replies)
+        return random.choice(replies)
 
-    # === 2. Fun Intents ===
+    # 2. Fun requests
     if re.search(r'\b(joke|funny|make me laugh)\b', q_lower):
         return random.choice(jokes) + "\n\nWant another one?"
 
     if re.search(r'\b(fun fact|interesting fact)\b', q_lower):
         return "🌟 Fun Fact: " + random.choice(fun_facts) + "\n\nWant more?"
 
-    if re.search(r'\b(quote|motivation|inspire)\b', q_lower):
-        return "💡 " + random.choice(quotes) + "\n\nHope this helps!"
+    if re.search(r'\b(quote|motivation)\b', q_lower):
+        return "💡 " + random.choice(quotes)
 
-    # === 3. Math ===
+    # 3. Math
     if any(c.isdigit() for c in q) or any(op in q_lower for op in ["+", "-", "*", "/", "^", "calculate", "solve"]):
         try:
             expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
@@ -117,58 +104,49 @@ def get_best_response(user_query):
             else:
                 result = sp.sympify(expr).evalf(12)
             clean = int(result) if result.is_integer else str(result).rstrip('0').rstrip('.')
-            return f"The answer is **{clean}**.\n\nWould you like a step-by-step explanation?"
+            return f"The answer is **{clean}**.\n\nWould you like me to explain the steps?"
         except:
             pass
 
-    # === 4. KNOWLEDGE QUESTIONS (Major Improvement) ===
-    if any(word in q_lower for word in ["what", "who", "where", "when", "why", "how", "tell me", "explain", "about", "meaning of"]):
+    # 4. KNOWLEDGE QUESTIONS - This is the biggest upgrade
+    if any(word in q_lower for word in ["what", "who", "where", "when", "why", "how", "tell me", "explain", "about", "meaning of", "who invented", "capital of"]):
         try:
-            # Clean query for better search
             term = re.sub(r'^(what is|who is|tell me about|explain|what|who|how|why|where|when)\s+', '', q, flags=re.I).strip()
-            if len(term) < 2:
+            if len(term) < 3:
                 term = q
 
             titles = wikipedia.search(term, results=3)
             if titles:
-                summary = wikipedia.summary(titles[0], sentences=7, auto_suggest=True)
+                summary = wikipedia.summary(titles[0], sentences=8, auto_suggest=True)
                 page = wikipedia.page(titles[0])
-                return f"**{page.title}**\n\n{summary.strip()}\n\nSource: {page.url}\n\nIs there anything specific you'd like to know more about?"
+                return f"**{page.title}**\n\n{summary}\n\nSource: {page.url}\n\nAnything else you want to know about this?"
         except:
             pass
 
-    # === 5. Emotional Support ===
-    if any(word in q_lower for word in ["sad", "down", "depressed", "upset", "bad day", "not feeling good"]):
-        return "I'm sorry you're feeling down. It's okay to feel this way. I'm here to listen if you want to share."
-    if any(word in q_lower for word in ["frustrated", "angry", "annoyed", "irritated"]):
-        return "That sounds really frustrating. Feel free to vent — I'm listening."
+    # 5. Emotional support
+    if any(word in q_lower for word in ["sad", "down", "depressed", "upset", "bad day"]):
+        return "I'm really sorry you're feeling this way. It's okay to feel low. I'm here to listen if you want to share."
+    if any(word in q_lower for word in ["frustrated", "angry", "annoyed"]):
+        return "That sounds frustrating. You can tell me what's bothering you — I'm listening."
     if any(word in q_lower for word in ["happy", "great", "excited", "awesome"]):
-        return "That's wonderful! 😊 I'm happy to hear that. Tell me more!"
+        return "That's wonderful! 😊 Tell me more about it!"
 
-    # === 6. Smart & Polite Fallback ===
-    return ("Thanks for your question! I want to give you the best possible answer. "
+    # 6. Smart fallback
+    return ("Thanks for your question! I want to give you the best answer. "
             "Could you please rephrase it or add a little more detail? "
-            "For example: 'What is Python?' or 'Tell me about Nagpur' works great.")
+            "For example: 'What is the capital of India?' or 'Tell me about Nagpur' works really well.")
 
 # ====================== UI ======================
 with st.sidebar:
     st.header("MayBot Controls")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🆕 New Chat", use_container_width=True):
-            st.session_state.messages = [{"role": "assistant", "content": "Hello again! 😊 How can I help you today?"}]
-            st.session_state.last_topics = []
-            st.rerun()
-    with col2:
-        if st.button("🗑️ Clear Chat", use_container_width=True):
-            st.session_state.messages = [{"role": "assistant", "content": "Hey! Hello there 😊 What would you like to talk about?"}]
-            st.session_state.last_topics = []
-            st.rerun()
-
-    if st.button("📥 Export Chat", use_container_width=True) and len(st.session_state.messages) > 1:
-        chat_text = "\n\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages])
-        st.download_button("⬇️ Download Conversation", chat_text,
-                           f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
+    if st.button("🆕 New Chat", use_container_width=True):
+        st.session_state.messages = [{"role": "assistant", "content": "Hello again! 😊 How can I help you today?"}]
+        st.session_state.last_topics = []
+        st.rerun()
+    if st.button("🗑️ Clear Chat", use_container_width=True):
+        st.session_state.messages = [{"role": "assistant", "content": "Hey! Hello there 😊 What would you like to talk about?"}]
+        st.session_state.last_topics = []
+        st.rerun()
 
     st.divider()
     st.caption("Created by Mayon Oberoi • Nagpur, India")
@@ -176,9 +154,9 @@ with st.sidebar:
 if logo_img:
     st.image(logo_img, width=150)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
-st.caption("Your friendly AI companion")
+st.caption("Your improved AI companion")
 
-# Voice Input
+# Voice
 if st.button("🎤 Speak Now", type="primary", use_container_width=True):
     voice_html = """
     <script>
@@ -222,7 +200,7 @@ if prompt := st.chat_input("Ask me anything..."):
 
     with st.chat_message("assistant", avatar=logo_img):
         with st.spinner("Thinking..."):
-            time.sleep(0.65)
+            time.sleep(0.7)
             response = get_best_response(prompt)
             st.write(response)
 
