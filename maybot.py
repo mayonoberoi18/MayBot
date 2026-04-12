@@ -26,8 +26,20 @@ st.markdown("""
         background-image: radial-gradient(circle at 25% 25%, rgba(16, 185, 129, 0.18) 0%, transparent 50%),
                           radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.18) 0%, transparent 50%);
     }
-    .stChatMessage { border-radius: 22px; box-shadow: 0 12px 45px rgba(0,0,0,0.7); padding: 18px 24px; border: 1px solid rgba(255,255,255,0.1); }
-    .main-title { font-size: 4.2rem; font-weight: 900; background: linear-gradient(90deg, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+    .stChatMessage {
+        border-radius: 22px;
+        box-shadow: 0 12px 45px rgba(0,0,0,0.7);
+        padding: 18px 24px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .main-title {
+        font-size: 4.2rem;
+        font-weight: 900;
+        background: linear-gradient(90deg, #10b981, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -37,23 +49,34 @@ def load_logo():
 logo_img = load_logo()
 
 # Content
-jokes = ["Why don't skeletons fight each other? They don't have the guts! 😂",
-         "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
-         "Why do programmers prefer dark mode? Light attracts bugs! 💻"]
+jokes = [
+    "Why don't skeletons fight each other? They don't have the guts! 😂",
+    "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
+    "Why do programmers prefer dark mode? Light attracts bugs! 💻"
+]
 
-fun_facts = ["Octopuses have three hearts!", "Honey never spoils!", "A group of flamingos is called a flamboyance."]
+fun_facts = [
+    "Octopuses have three hearts!",
+    "Honey never spoils!",
+    "A group of flamingos is called a flamboyance."
+]
 
-quotes = ["The only way to do great work is to love what you do. – Steve Jobs",
-          "Be the change you wish to see in the world. – Mahatma Gandhi"]
+quotes = [
+    "The only way to do great work is to love what you do. – Steve Jobs",
+    "Be the change you wish to see in the world. – Mahatma Gandhi"
+]
 
 # Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Ask me anything — I'm ready!"}]
+    st.session_state.messages = [{
+        "role": "assistant",
+        "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Hello there! How can I help you today?"
+    }]
 
 if "last_topics" not in st.session_state:
     st.session_state.last_topics = []
 
-# ====================== IMPROVED RESPONSE ENGINE ======================
+# ====================== UPGRADED RESPONSE LOGIC ======================
 def get_best_response(user_query):
     q = user_query.strip()
     q_lower = q.lower()
@@ -63,17 +86,28 @@ def get_best_response(user_query):
     if len(st.session_state.last_topics) > 10:
         st.session_state.last_topics.pop(0)
 
-    # === 1. SPECIAL INTENTS (Math, Jokes, Facts, Quotes) ===
+    # === 1. GREETINGS (Strong & Fixed) ===
+    greeting_patterns = r'\b(hi|hello|hey|sup|namaste|good morning|good afternoon|good evening|howdy)\b'
+    if re.search(greeting_patterns, q_lower):
+        greeting_replies = [
+            "Hello! 👋 Great to see you. How are you today?",
+            "Hey there! 😊 Nice to hear from you. What's on your mind?",
+            "Hi! How's your day going so far?",
+            "Hello! I'm MayBot. Happy to chat with you. How can I help?"
+        ]
+        return random.choice(greeting_replies)
+
+    # === 2. Fun Intents ===
     if re.search(r'\b(joke|funny|make me laugh)\b', q_lower):
         return random.choice(jokes) + "\n\nWant another one?"
 
-    if re.search(r'\b(fun fact|interesting fact|tell me a fact)\b', q_lower):
+    if re.search(r'\b(fun fact|interesting fact)\b', q_lower):
         return "🌟 Fun Fact: " + random.choice(fun_facts) + "\n\nWant more?"
 
     if re.search(r'\b(quote|motivation|inspire)\b', q_lower):
-        return "💡 " + random.choice(quotes) + "\n\nNeed another?"
+        return "💡 " + random.choice(quotes) + "\n\nHope this helps!"
 
-    # === 2. MATH ===
+    # === 3. Math ===
     if any(c.isdigit() for c in q) or any(op in q_lower for op in ["+", "-", "*", "/", "^", "calculate", "solve"]):
         try:
             expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
@@ -83,58 +117,58 @@ def get_best_response(user_query):
             else:
                 result = sp.sympify(expr).evalf(12)
             clean = int(result) if result.is_integer else str(result).rstrip('0').rstrip('.')
-            return f"The answer is **{clean}**.\n\nWould you like me to explain the steps?"
+            return f"The answer is **{clean}**.\n\nWould you like a step-by-step explanation?"
         except:
             pass
 
-    # === 3. KNOWLEDGE / GENERAL QUESTIONS (This is the big upgrade) ===
-    knowledge_triggers = ["what", "who", "where", "when", "why", "how", "tell me", "explain", "define", "about", "meaning", "history", "capital", "invented"]
-    if any(trigger in q_lower for trigger in knowledge_triggers):
+    # === 4. KNOWLEDGE QUESTIONS (Major Improvement) ===
+    if any(word in q_lower for word in ["what", "who", "where", "when", "why", "how", "tell me", "explain", "about", "meaning of"]):
         try:
-            # Clean the query
+            # Clean query for better search
             term = re.sub(r'^(what is|who is|tell me about|explain|what|who|how|why|where|when)\s+', '', q, flags=re.I).strip()
-            if not term:
+            if len(term) < 2:
                 term = q
 
             titles = wikipedia.search(term, results=3)
             if titles:
-                summary = wikipedia.summary(titles[0], sentences=8, auto_suggest=True)
+                summary = wikipedia.summary(titles[0], sentences=7, auto_suggest=True)
                 page = wikipedia.page(titles[0])
-                return f"**{page.title}**\n\n{summary}\n\nSource: {page.url}\n\nAnything else you want to know about this?"
+                return f"**{page.title}**\n\n{summary.strip()}\n\nSource: {page.url}\n\nIs there anything specific you'd like to know more about?"
         except:
             pass
 
-    # === 4. EMOTIONAL SUPPORT ===
-    if any(word in q_lower for word in ["sad", "down", "depressed", "upset", "bad day"]):
-        return "I'm really sorry you're feeling this way. It's okay to feel low. I'm here to listen if you want to share more."
-    if any(word in q_lower for word in ["frustrated", "angry", "annoyed"]):
-        return "That sounds frustrating. You can vent to me — I'm listening."
+    # === 5. Emotional Support ===
+    if any(word in q_lower for word in ["sad", "down", "depressed", "upset", "bad day", "not feeling good"]):
+        return "I'm sorry you're feeling down. It's okay to feel this way. I'm here to listen if you want to share."
+    if any(word in q_lower for word in ["frustrated", "angry", "annoyed", "irritated"]):
+        return "That sounds really frustrating. Feel free to vent — I'm listening."
     if any(word in q_lower for word in ["happy", "great", "excited", "awesome"]):
-        return "That's awesome! 😊 Tell me more about what's making you happy!"
+        return "That's wonderful! 😊 I'm happy to hear that. Tell me more!"
 
-    # === 5. SMART FALLBACK ===
-    recent_topic = st.session_state.last_topics[-2] if len(st.session_state.last_topics) > 1 else ""
-    if "math" in recent_topic or "calculate" in recent_topic:
-        return "We were talking about math earlier. Is this related, or do you want to ask something new?"
+    # === 6. Smart & Polite Fallback ===
+    return ("Thanks for your question! I want to give you the best possible answer. "
+            "Could you please rephrase it or add a little more detail? "
+            "For example: 'What is Python?' or 'Tell me about Nagpur' works great.")
 
-    return ("Got it! I'm not 100% sure what you're asking, but I'm trying my best. "
-            "Could you rephrase your question or give me a bit more detail? For example, try starting with 'What is' or 'Tell me about'.")
-
-# ====================== SIDEBAR & HEADER ======================
+# ====================== UI ======================
 with st.sidebar:
     st.header("MayBot Controls")
-    if st.button("🆕 New Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Hey! Fresh chat. What would you like to talk about?"}]
-        st.session_state.last_topics = []
-        st.rerun()
-    if st.button("🗑️ Clear Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Clean slate! How can I help you today?"}]
-        st.session_state.last_topics = []
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🆕 New Chat", use_container_width=True):
+            st.session_state.messages = [{"role": "assistant", "content": "Hello again! 😊 How can I help you today?"}]
+            st.session_state.last_topics = []
+            st.rerun()
+    with col2:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            st.session_state.messages = [{"role": "assistant", "content": "Hey! Hello there 😊 What would you like to talk about?"}]
+            st.session_state.last_topics = []
+            st.rerun()
 
     if st.button("📥 Export Chat", use_container_width=True) and len(st.session_state.messages) > 1:
         chat_text = "\n\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages])
-        st.download_button("⬇️ Download", chat_text, f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
+        st.download_button("⬇️ Download Conversation", chat_text,
+                           f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
 
     st.divider()
     st.caption("Created by Mayon Oberoi • Nagpur, India")
@@ -142,9 +176,9 @@ with st.sidebar:
 if logo_img:
     st.image(logo_img, width=150)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
-st.caption("Your improved AI companion")
+st.caption("Your friendly AI companion")
 
-# ====================== VOICE & CHAT ======================
+# Voice Input
 if st.button("🎤 Speak Now", type="primary", use_container_width=True):
     voice_html = """
     <script>
@@ -164,7 +198,7 @@ if "voice" in st.query_params:
         st.session_state.messages.append({"role": "user", "content": transcript})
         st.rerun()
 
-# Display messages
+# Chat Display
 for idx, msg in enumerate(st.session_state.messages):
     avatar = logo_img if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
@@ -180,7 +214,7 @@ for idx, msg in enumerate(st.session_state.messages):
                 """
                 st.components.v1.html(tts_html, height=0)
 
-# Chat Input
+# Main Input
 if prompt := st.chat_input("Ask me anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -188,7 +222,7 @@ if prompt := st.chat_input("Ask me anything..."):
 
     with st.chat_message("assistant", avatar=logo_img):
         with st.spinner("Thinking..."):
-            time.sleep(0.7)
+            time.sleep(0.65)
             response = get_best_response(prompt)
             st.write(response)
 
