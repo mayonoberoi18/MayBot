@@ -10,7 +10,7 @@ import time
 
 wikipedia.set_lang("en")
 
-# Page Config
+# ====================== PAGE CONFIG ======================
 logo_path = "illuminati.png"
 try:
     favicon = Image.open(logo_path)
@@ -37,54 +37,44 @@ def load_logo():
 logo_img = load_logo()
 
 # Content
-jokes = ["Why don't skeletons fight each other? They don't have the guts! 😂", "Why did the scarecrow win an award? He was outstanding in his field! 🌾"]
-fun_facts = ["Octopuses have three hearts!", "Honey never spoils!", "A group of flamingos is called a flamboyance."]
-quotes = ["The only way to do great work is to love what you do. – Steve Jobs", "Be the change you wish to see in the world. – Mahatma Gandhi"]
+jokes = ["Why don't skeletons fight each other? They don't have the guts! 😂",
+         "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
+         "Why do programmers prefer dark mode? Light attracts bugs! 💻"]
 
+fun_facts = ["Octopuses have three hearts!", "Honey never spoils!", "A group of flamingos is called a flamboyance."]
+
+quotes = ["The only way to do great work is to love what you do. – Steve Jobs",
+          "Be the change you wish to see in the world. – Mahatma Gandhi"]
+
+# Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. How can I help you today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Ask me anything — I'm ready!"}]
 
 if "last_topics" not in st.session_state:
     st.session_state.last_topics = []
 
-# Improved Emotion Detection (kept light)
-def detect_emotion(text):
-    t = text.lower()
-    if any(w in t for w in ["sad", "down", "depressed", "upset"]): return "sad"
-    if any(w in t for w in ["frustrated", "angry", "annoyed"]): return "frustrated"
-    if any(w in t for w in ["anxious", "worried"]): return "anxious"
-    if any(w in t for w in ["happy", "great", "excited"]): return "positive"
-    return "neutral"
-
+# ====================== IMPROVED RESPONSE ENGINE ======================
 def get_best_response(user_query):
     q = user_query.strip()
     q_lower = q.lower()
 
+    # Update memory
     st.session_state.last_topics.append(q_lower)
-    if len(st.session_state.last_topics) > 8:
+    if len(st.session_state.last_topics) > 10:
         st.session_state.last_topics.pop(0)
 
-    emotion = detect_emotion(q)
+    # === 1. SPECIAL INTENTS (Math, Jokes, Facts, Quotes) ===
+    if re.search(r'\b(joke|funny|make me laugh)\b', q_lower):
+        return random.choice(jokes) + "\n\nWant another one?"
 
-    # === BROADER KNOWLEDGE TRIGGER (This should fix most "not answering" issues) ===
-    knowledge_words = ["what", "who", "where", "when", "why", "how", "tell me", "explain", "define", "about", "meaning of", "history of"]
-    if any(word in q_lower for word in knowledge_words) and len(q) > 5:
-        try:
-            # Clean the query
-            term = re.sub(r'^(what is|who is|tell me about|explain|what|who|how|why)\s+', '', q, flags=re.I).strip()
-            if not term:
-                term = q
+    if re.search(r'\b(fun fact|interesting fact|tell me a fact)\b', q_lower):
+        return "🌟 Fun Fact: " + random.choice(fun_facts) + "\n\nWant more?"
 
-            titles = wikipedia.search(term, results=3)
-            if titles:
-                summary = wikipedia.summary(titles[0], sentences=8, auto_suggest=True)
-                page = wikipedia.page(titles[0])
-                return f"**{page.title}**\n\n{summary.strip()}\n\nSource: {page.url}\n\nAnything else you'd like to know about this?"
-        except Exception as e:
-            pass  # Fall through to other handlers
+    if re.search(r'\b(quote|motivation|inspire)\b', q_lower):
+        return "💡 " + random.choice(quotes) + "\n\nNeed another?"
 
-    # === Math ===
-    if any(c.isdigit() for c in q) or any(op in q_lower for op in ["+", "-", "*", "/", "^", "calculate", "solve", "what is"]):
+    # === 2. MATH ===
+    if any(c.isdigit() for c in q) or any(op in q_lower for op in ["+", "-", "*", "/", "^", "calculate", "solve"]):
         try:
             expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
             if '=' in expr:
@@ -93,69 +83,75 @@ def get_best_response(user_query):
             else:
                 result = sp.sympify(expr).evalf(12)
             clean = int(result) if result.is_integer else str(result).rstrip('0').rstrip('.')
-            return f"The answer is **{clean}**.\n\nWant a step-by-step explanation?"
+            return f"The answer is **{clean}**.\n\nWould you like me to explain the steps?"
         except:
             pass
 
-    # === Fun Intents ===
-    if re.search(r'\b(joke|funny|laugh)\b', q_lower):
-        return random.choice(jokes) + "\n\nWant another one?"
-    if re.search(r'\b(fun fact|fact)\b', q_lower):
-        return "🌟 Fun Fact: " + random.choice(fun_facts)
-    if re.search(r'\b(quote|motivation)\b', q_lower):
-        return "💡 " + random.choice(quotes)
+    # === 3. KNOWLEDGE / GENERAL QUESTIONS (This is the big upgrade) ===
+    knowledge_triggers = ["what", "who", "where", "when", "why", "how", "tell me", "explain", "define", "about", "meaning", "history", "capital", "invented"]
+    if any(trigger in q_lower for trigger in knowledge_triggers):
+        try:
+            # Clean the query
+            term = re.sub(r'^(what is|who is|tell me about|explain|what|who|how|why|where|when)\s+', '', q, flags=re.I).strip()
+            if not term:
+                term = q
 
-    # === Emotional Support ===
-    if emotion == "sad":
-        return "I'm sorry you're feeling down. It's okay to feel this way. I'm here to listen if you want to talk about it."
-    if emotion == "frustrated":
-        return "That sounds frustrating. Feel free to vent — I'm listening."
-    if emotion == "positive":
-        return "That's great to hear! 😊 What's making you feel good?"
+            titles = wikipedia.search(term, results=3)
+            if titles:
+                summary = wikipedia.summary(titles[0], sentences=8, auto_suggest=True)
+                page = wikipedia.page(titles[0])
+                return f"**{page.title}**\n\n{summary}\n\nSource: {page.url}\n\nAnything else you want to know about this?"
+        except:
+            pass
 
-    # === Stronger Fallback ===
-    return ("Thanks for your question! I want to give you the best answer possible. "
-            "Could you rephrase it or add a bit more detail? For example, try starting with 'What is', 'Who is', or 'Tell me about'.")
+    # === 4. EMOTIONAL SUPPORT ===
+    if any(word in q_lower for word in ["sad", "down", "depressed", "upset", "bad day"]):
+        return "I'm really sorry you're feeling this way. It's okay to feel low. I'm here to listen if you want to share more."
+    if any(word in q_lower for word in ["frustrated", "angry", "annoyed"]):
+        return "That sounds frustrating. You can vent to me — I'm listening."
+    if any(word in q_lower for word in ["happy", "great", "excited", "awesome"]):
+        return "That's awesome! 😊 Tell me more about what's making you happy!"
 
-# ====================== UI (Sidebar, Header, Voice, Chat) ======================
+    # === 5. SMART FALLBACK ===
+    recent_topic = st.session_state.last_topics[-2] if len(st.session_state.last_topics) > 1 else ""
+    if "math" in recent_topic or "calculate" in recent_topic:
+        return "We were talking about math earlier. Is this related, or do you want to ask something new?"
+
+    return ("Got it! I'm not 100% sure what you're asking, but I'm trying my best. "
+            "Could you rephrase your question or give me a bit more detail? For example, try starting with 'What is' or 'Tell me about'.")
+
+# ====================== SIDEBAR & HEADER ======================
 with st.sidebar:
     st.header("MayBot Controls")
     if st.button("🆕 New Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Hey again! How can I help you today?"}]
+        st.session_state.messages = [{"role": "assistant", "content": "Hey! Fresh chat. What would you like to talk about?"}]
         st.session_state.last_topics = []
         st.rerun()
     if st.button("🗑️ Clear Chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Hey! How can I help you today?"}]
+        st.session_state.messages = [{"role": "assistant", "content": "Clean slate! How can I help you today?"}]
         st.session_state.last_topics = []
         st.rerun()
+
+    if st.button("📥 Export Chat", use_container_width=True) and len(st.session_state.messages) > 1:
+        chat_text = "\n\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages])
+        st.download_button("⬇️ Download", chat_text, f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
+
     st.divider()
     st.caption("Created by Mayon Oberoi • Nagpur, India")
 
 if logo_img:
     st.image(logo_img, width=150)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
-st.caption("Your helpful AI companion")
+st.caption("Your improved AI companion")
 
-# Quick Actions
-cols = st.columns(4)
-with cols[0]:
-    if st.button("😂 Joke", use_container_width=True):
-        st.session_state.messages.append({"role": "assistant", "content": random.choice(jokes)})
-        st.rerun()
-with cols[1]:
-    if st.button("🌟 Fact", use_container_width=True):
-        st.session_state.messages.append({"role": "assistant", "content": "🌟 " + random.choice(fun_facts)})
-        st.rerun()
-
-# Voice Input
+# ====================== VOICE & CHAT ======================
 if st.button("🎤 Speak Now", type="primary", use_container_width=True):
     voice_html = """
     <script>
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
         recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            window.location.search = "?voice=" + encodeURIComponent(transcript);
+            window.location.search = "?voice=" + encodeURIComponent(event.results[0][0].transcript);
         };
         recognition.start();
     </script>
@@ -168,7 +164,7 @@ if "voice" in st.query_params:
         st.session_state.messages.append({"role": "user", "content": transcript})
         st.rerun()
 
-# Chat Display
+# Display messages
 for idx, msg in enumerate(st.session_state.messages):
     avatar = logo_img if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
@@ -192,10 +188,9 @@ if prompt := st.chat_input("Ask me anything..."):
 
     with st.chat_message("assistant", avatar=logo_img):
         with st.spinner("Thinking..."):
-            time.sleep(0.6)
+            time.sleep(0.7)
             response = get_best_response(prompt)
             st.write(response)
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
-    
