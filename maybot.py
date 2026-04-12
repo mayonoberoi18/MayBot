@@ -21,11 +21,25 @@ st.set_page_config(page_title="MayBot", page_icon=favicon, layout="wide")
 
 st.markdown("""
 <style>
-    [data-testid="stAppViewContainer"] {background: #020617;
+    [data-testid="stAppViewContainer"] {
+        background: #020617;
         background-image: radial-gradient(circle at 25% 25%, rgba(16, 185, 129, 0.18) 0%, transparent 50%),
-                          radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.18) 0%, transparent 50%);}
-    .stChatMessage {border-radius: 22px; box-shadow: 0 12px 45px rgba(0,0,0,0.7); padding: 18px 24px; border: 1px solid rgba(255,255,255,0.1);}
-    .main-title {font-size: 4.2rem; font-weight: 900; background: linear-gradient(90deg, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center;}
+                          radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.18) 0%, transparent 50%);
+    }
+    .stChatMessage {
+        border-radius: 22px;
+        box-shadow: 0 12px 45px rgba(0,0,0,0.7);
+        padding: 18px 24px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .main-title {
+        font-size: 4.2rem;
+        font-weight: 900;
+        background: linear-gradient(90deg, #10b981, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -35,70 +49,120 @@ def load_logo():
 logo_img = load_logo()
 
 # ====================== CONTENT ======================
-jokes = ["Why don't skeletons fight? They don't have the guts! 😂", "Why did the scarecrow win? He was outstanding in his field! 🌾"]
-fun_facts = ["Octopuses have three hearts!", "Honey never spoils!", "A group of flamingos is called a flamboyance."]
-quotes = ["The only way to do great work is to love what you do. – Steve Jobs", "Be the change you wish to see in the world. – Mahatma Gandhi"]
+jokes = [
+    "Why don't skeletons fight each other? They don't have the guts! 😂",
+    "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
+    "Why do programmers prefer dark mode? Light attracts bugs! 💻"
+]
+
+fun_facts = [
+    "Octopuses have three hearts!",
+    "Honey never spoils!",
+    "A group of flamingos is called a flamboyance."
+]
+
+quotes = [
+    "The only way to do great work is to love what you do. – Steve Jobs",
+    "Be the change you wish to see in the world. – Mahatma Gandhi"
+]
 
 # Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Arre waah! Hey yaar 😊 I'm MayBot, made with love by Mayon from Nagpur. Kaise ho aaj? How are you feeling?"}]
+    st.session_state.messages = [{
+        "role": "assistant",
+        "content": "Hey! I'm MayBot 😊 Created by Mayon from Nagpur. Nice to meet you. How are you feeling today?"
+    }]
 
 if "last_topics" not in st.session_state:
     st.session_state.last_topics = []
 if "last_emotion" not in st.session_state:
     st.session_state.last_emotion = "neutral"
-if "chat_summary" not in st.session_state:
-    st.session_state.chat_summary = ""
 
-# ====================== ETHICAL + EMOTIONAL INTELLIGENCE ======================
+# ====================== REFINED EMOTION DETECTION ======================
 def detect_emotion(text):
     t = text.lower()
-    if any(w in t for w in ["frustrated", "angry", "annoyed", "irritated", "pissed"]): return "frustrated"
-    if any(w in t for w in ["sad", "down", "depressed", "upset", "lonely", "bad day"]): return "sad"
-    if any(w in t for w in ["anxious", "worried", "nervous", "overwhelmed"]): return "anxious"
-    if any(w in t for w in ["happy", "great", "awesome", "excited", "amazing"]): return "positive"
-    if any(w in t for w in ["confused", "lost", "don't understand"]): return "confused"
+    if any(w in t for w in ["frustrated", "angry", "annoyed", "irritated", "pissed"]):
+        return "frustrated"
+    if any(w in t for w in ["sad", "down", "depressed", "upset", "lonely", "bad day"]):
+        return "sad"
+    if any(w in t for w in ["anxious", "worried", "nervous", "overwhelmed"]):
+        return "anxious"
+    if any(w in t for w in ["happy", "great", "awesome", "excited", "amazing", "proud"]):
+        return "positive"
+    if any(w in t for w in ["confused", "lost", "don't understand"]):
+        return "confused"
     return "neutral"
 
+# ====================== BEST RESPONSE LOGIC ======================
 def get_best_response(user_query):
     q = user_query.strip()
     q_lower = q.lower()
-    
-    # Memory update
+
+    # Update memory
     st.session_state.last_topics.append(q_lower)
     if len(st.session_state.last_topics) > 10:
         st.session_state.last_topics.pop(0)
-    
+
     emotion = detect_emotion(q)
     st.session_state.last_emotion = emotion
 
-    # === 1. Greetings & Warm Connection ===
-    if re.search(r'\b(hi|hello|hey|namaste|sup|kaise ho)\b', q_lower):
-        if emotion == "positive": return "Heyy! Mast mood mein dikhte ho aaj 😄 Kya baat hai?"
-        if emotion in ["sad", "frustrated", "anxious"]: return "Hey... lagta hai aaj thoda heavy feel ho raha hai. I'm here yaar. Batao kya hua?"
-        return "Arre waah! Hello bhai! 😊 Aaj ka mood kaisa hai?"
+    # Ethical note for sensitive topics
+    ethical_note = "\n\nJust a reminder: I'm an AI companion, not a licensed therapist. If you're feeling overwhelmed, please talk to a friend, family member, or a mental health professional."
 
-    # === 2. Emotional Support (Ethical & Caring) ===
-    ethical_note = "\n\n(Quick reminder: I'm an AI friend, not a therapist. If things feel heavy, please talk to a real person — family, friend, or call a helpline.)"
+    # 1. Greetings
+    if re.search(r'\b(hi|hello|hey|sup|good morning|good afternoon|good evening)\b', q_lower):
+        if emotion == "positive":
+            return "Hey! You sound in a great mood today 😊 What's making you happy?"
+        elif emotion in ["sad", "frustrated", "anxious"]:
+            return "Hey... You sound like you're having a tough day. How are you really doing?"
+        return "Hey! Great to see you 😊 How are you feeling today?"
+
+    if "how are you" in q_lower:
+        return "I'm doing well, thank you for asking! How about you — how's your day going?"
+
+    # 2. Thanks
+    if any(word in q_lower for word in ["thank", "thanks", "thank you"]):
+        return "You're very welcome! I'm happy I could help 😊"
+
+    # 3. About Me
+    if any(word in q_lower for word in ["who made you", "creator", "mayon", "your developer"]):
+        return "I'm MayBot, created by Mayon Oberoi from Nagpur, India. He's a passionate developer who built me to be helpful and friendly. What made you curious?"
+
+    # 4. Emotional Support (Ethical & Balanced)
+    if emotion == "positive":
+        return random.choice([
+            "That's wonderful to hear! I'm really glad you're feeling good 😊 Tell me more about it!",
+            "Love this positive energy! What's the best part of your day so far?"
+        ])
 
     if emotion == "sad":
-        return f"That sounds really tough... It's okay to feel low sometimes. I'm here to listen if you want to share, but please also reach out to someone close to you.{ethical_note}"
+        return ("I'm really sorry you're feeling this way. It's completely okay to feel down sometimes. "
+                "I'm here to listen if you'd like to share, but please also consider talking to someone close to you." + ethical_note)
+
     if emotion == "frustrated":
-        return f"Ugh, frustration is the worst! Vent karo yaar — main sun raha hoon. But for real solutions, talking to someone in real life helps a lot.{ethical_note}"
+        return ("That sounds really frustrating... I can understand why you'd feel that way. "
+                "Feel free to vent if it helps, but for deeper support, talking to a real person can make a big difference." + ethical_note)
+
     if emotion == "anxious":
-        return f"Anxiety can feel overwhelming... Take a deep breath with me. I'm right here. If it's too much, please talk to someone who can truly support you.{ethical_note}"
-    if emotion == "positive":
-        return random.choice(["That's awesome yaar! 😄 Batao, kya mast cheez hui?", "Love this energy! Keep shining 🔥 What's making you smile?"])
+        return ("Anxiety can feel heavy... You're not alone in feeling this. "
+                "I'm here if you want to talk about it, but reaching out to someone in your life or a professional is often the most helpful step." + ethical_note)
 
-    # === 3. Fun & Engagement ===
-    if re.search(r'\b(joke|funny|hasi|mazak)\b', q_lower):
-        return random.choice(jokes) + "\n\nHaha, lagi smile? Ek aur chahiye?"
-    if re.search(r'\b(fact|interesting)\b', q_lower):
-        return "🌟 Fun Fact: " + random.choice(fun_facts) + "\n\nMind blown? 😲"
-    if re.search(r'\b(quote|motivation)\b', q_lower):
-        return "💡 " + random.choice(quotes) + "\n\nFeels good, right?"
+    if emotion == "confused":
+        return "I sense some confusion there. No worries — let's take it slow. What part feels unclear to you?"
 
-    # === 4. Math with Step-by-Step ===
+    # 5. Fun Content
+    if re.search(r'\b(joke|funny|make me laugh)\b', q_lower):
+        if emotion in ["sad", "frustrated", "anxious"]:
+            return "I know things might be tough right now, so here's a light joke to brighten the mood:\n\n" + random.choice(jokes) + "\n\nDid that help even a little?"
+        return random.choice(jokes) + "\n\nHope that brought a smile! Want another one?"
+
+    if re.search(r'\b(fun fact|interesting fact)\b', q_lower):
+        return "🌟 Fun Fact: " + random.choice(fun_facts) + "\n\nPretty cool, right?"
+
+    if re.search(r'\b(quote|motivation|inspire)\b', q_lower):
+        return "💡 " + random.choice(quotes) + "\n\nHope this lifts your spirits a bit!"
+
+    # 6. Math with Step-by-Step
     if any(c.isdigit() for c in q) or any(op in q_lower for op in ["+", "-", "*", "/", "^", "calculate", "solve"]):
         try:
             expr = q.replace('^', '**').replace('x', '*').replace('X', '*').replace(' ', '')
@@ -108,35 +172,30 @@ def get_best_response(user_query):
             else:
                 result = sp.sympify(expr).evalf(12)
             clean = int(result) if result.is_integer else str(result).rstrip('0').rstrip('.')
-            
-            if "step" in q_lower or "explain" in q_lower or "how" in q_lower:
-                return f"🔢 Answer: **{clean}**\n\nStep-by-step coming up if you want! Just say 'explain'."
-            return f"🔢 The answer is **{clean}**. Mast solve hua na? Want me to explain the steps?"
+
+            if any(word in q_lower for word in ["explain", "step", "how"]):
+                return f"The answer is **{clean}**.\n\nWould you like me to show the step-by-step solution?"
+            return f"The answer is **{clean}**. Nice question! Want me to explain how we got there?"
         except:
             pass
 
-    # === 5. Knowledge (Wikipedia) ===
-    if any(word in q_lower for word in ["what is", "who is", "tell me about", "explain", "kya hai"]):
+    # 7. Knowledge (Wikipedia)
+    if any(word in q_lower for word in ["what is", "who is", "who was", "tell me about", "explain", "define"]):
         try:
-            term = re.sub(r'^(what is|who is|tell me about|explain|kya hai)\s+', '', q, flags=re.I).strip()
+            term = re.sub(r'^(what is|who is|tell me about|explain|define)\s+', '', q, flags=re.I).strip()
             titles = wikipedia.search(term, results=3)
             if titles:
                 summary = wikipedia.summary(titles[0], sentences=7, auto_suggest=True)
                 page = wikipedia.page(titles[0])
-                return f"**{page.title}**\n\n{summary}\n\nSource: {page.url}\n\nAur kuch jaanna hai iske baare mein?"
+                return f"**{page.title}**\n\n{summary.strip()}\n\nSource: {page.url}\n\nIs there anything specific you'd like to know more about?"
         except:
             pass
 
-    # === 6. Smart, Natural Fallback with Memory ===
-    if st.session_state.last_topics:
-        last = st.session_state.last_topics[-1]
-        if "math" in last or "calculate" in last:
-            return "Pehle math pe baat kar rahe the... ab kya soch rahe ho yaar?"
-    
+    # 8. Natural & Warm Fallback
     return random.choice([
-        "Hmm, interesting baat hai... Aur batao na, main sun raha hoon 😊",
-        "Samajh gaya. Thoda aur detail doge to better help kar sakta hoon.",
-        "Achha lag raha hai baat karna tere saath. Kya aur hai dil mein?"
+        "Hmm, interesting... Could you tell me a bit more? I'd love to understand better.",
+        "Got it. Take your time — I'm here and listening 😊",
+        "That's a good point. What made you think about this today?"
     ])
 
 # ====================== SIDEBAR ======================
@@ -145,35 +204,36 @@ with st.sidebar:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🆕 New Chat", use_container_width=True):
-            st.session_state.messages = [{"role": "assistant", "content": "Fresh start! Hey yaar 😊 Kya scene hai aaj?"}]
+            st.session_state.messages = [{"role": "assistant", "content": "Hey again! 😊 Fresh start — how are you feeling today?"}]
             st.session_state.last_topics = []
             st.rerun()
     with col2:
         if st.button("🗑️ Clear Chat", use_container_width=True):
-            st.session_state.messages = [{"role": "assistant", "content": "Clean slate! Hello again 😊 How are you feeling?"}]
+            st.session_state.messages = [{"role": "assistant", "content": "Clean slate! Hello again 😊 How are you today?"}]
             st.session_state.last_topics = []
             st.rerun()
 
     if st.button("📥 Export Chat", use_container_width=True):
         if len(st.session_state.messages) > 1:
             chat_text = "\n\n".join([f"{m['role'].upper()} ({datetime.now().strftime('%H:%M')}): {m['content']}" for m in st.session_state.messages])
-            st.download_button("⬇️ Download", chat_text, f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
+            st.download_button("⬇️ Download Conversation", chat_text,
+                               f"MayBot_Chat_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", "text/plain", use_container_width=True)
 
     st.divider()
-    st.caption("Made with ❤️ by Mayon Oberoi • Nagpur, India")
+    st.caption("Created by Mayon Oberoi • Nagpur, India")
 
 # ====================== HEADER ======================
 if logo_img:
     st.image(logo_img, width=150)
 st.markdown('<h1 class="main-title">MayBot</h1>', unsafe_allow_html=True)
-st.caption("Your warm Nagpur buddy who actually listens 💙")
+st.caption("Your friendly, emotionally aware AI companion")
 
 # ====================== QUICK ACTIONS ======================
-st.markdown("### Quick Vibes")
+st.markdown("### Quick Actions")
 cols = st.columns(4)
 with cols[0]:
     if st.button("😂 Joke", use_container_width=True):
-        st.session_state.messages.append({"role": "assistant", "content": random.choice(jokes) + "\n\nHaha, lagi?"})
+        st.session_state.messages.append({"role": "assistant", "content": random.choice(jokes)})
         st.rerun()
 with cols[1]:
     if st.button("🌟 Fact", use_container_width=True):
@@ -184,18 +244,21 @@ with cols[2]:
         st.session_state.messages.append({"role": "assistant", "content": "💡 " + random.choice(quotes)})
         st.rerun()
 with cols[3]:
-    if st.button("🎤 Speak", type="primary", use_container_width=True):
+    if st.button("🎤 Speak Now", type="primary", use_container_width=True):
         voice_html = """
         <script>
             const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'en-US';
-            recognition.onresult = function(event) { window.location.search = "?voice=" + encodeURIComponent(event.results[0][0].transcript); };
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                window.location.search = "?voice=" + encodeURIComponent(transcript);
+            };
             recognition.start();
         </script>
         """
         st.components.v1.html(voice_html, height=0)
 
-# ====================== VOICE HANDLER ======================
+# ====================== VOICE INPUT HANDLER ======================
 if "voice" in st.query_params:
     transcript = st.query_params["voice"]
     if transcript:
@@ -212,20 +275,21 @@ for idx, msg in enumerate(st.session_state.messages):
                 tts_html = f"""
                 <script>
                     const utterance = new SpeechSynthesisUtterance(`{msg['content'].replace('`', '\\`')}`);
-                    utterance.rate = 1.05; utterance.pitch = 1.1; speechSynthesis.speak(utterance);
+                    utterance.rate = 1.05; utterance.pitch = 1.1;
+                    speechSynthesis.speak(utterance);
                 </script>
                 """
                 st.components.v1.html(tts_html, height=0)
 
-# ====================== CHAT INPUT ======================
-if prompt := st.chat_input("Bolo yaar... what's on your mind?"):
+# ====================== MAIN CHAT INPUT ======================
+if prompt := st.chat_input("What’s on your mind?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
     with st.chat_message("assistant", avatar=logo_img):
         with st.spinner("Thinking..."):
-            time.sleep(0.6)  # natural pause
+            time.sleep(0.65)   # Natural human-like pause
             response = get_best_response(prompt)
             st.write(response)
 
